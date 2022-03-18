@@ -1,0 +1,896 @@
+---
+title: "Um pouco sobre análise exploratória"
+output:
+  html_document:                    
+    #toc: true                       
+    #toc_depth: 3                    
+    #toc_float:                      
+    #  collapsed: true
+    #  smooth_scroll: true
+    #number_sections: true           
+    theme: flatly
+    #spacelab
+    #default,cerulean,journal,flatly,readable,spacelab,
+    #united,cosmo,lumen,paper,sandstone,simplex,yeti
+    
+    highlight: espresso
+    #default, tango, pygments, kate, monochrome, espresso, zenburn, haddock, and textmate
+    #css: styles.css                
+    fig_width: 7                    
+    fig_height: 6                   
+    fig_caption: true               
+    fig_align: 'center'
+    #code_folding: hide              
+#    keep_md: true                   
+---
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+
+library(tidyverse)
+library(plyr)
+library(pander)
+library(ggpubr)
+library(splitstackshape, quietly = TRUE)
+library(lubridate)
+library(GGally)
+library(ggmosaic)
+
+## TABELAS
+
+#-----------------------------------------------------------------
+
+### Tabela de frequencia simples não ordenada 
+
+freq_n_ord <- function(vetor){
+  fa <- table(vetor) # frequência absoluta
+  fr <- prop.table(fa) # frequência relativa
+  
+  table <- data.frame(Niveis = names(fa),
+                      Frequencia = as.vector(fa),
+                      `Frequencia relativa` = as.vector(fr)) # unindo
+  
+  table
+}
+
+#-----------------------------------------------------------------
+
+### Tabela de frequencia simples ordenada
+
+freq_ord <- function(vetor){
+  fa <- table(vetor) # frequência absoluta
+  fr <- prop.table(fa) # frequência relativa
+  
+  table <- data.frame(Niveis = names(fa),
+                      Frequencia = as.vector(fa),
+                      `Frequencia relativa` = as.vector(fr)) # unindo
+  
+  table <- arrange(table, desc(table$Frequencia))
+  
+  table    
+}
+
+#-----------------------------------------------------------------
+
+### Tabela por classes  
+
+tab_classes <- function(vetor){
+  h <- hist(vetor, plot = FALSE) #histograma
+  
+  breaks <- h$breaks #armazenando os breaks do histograma 
+  
+  classes <- cut(vetor, breaks = breaks, 
+                 include.lowest = TRUE, right = TRUE) #gerando classes
+  
+  table <- as.data.frame(table(classes)) #gerando tabela com faixas
+  
+  table$fr <- prop.table(table$Freq)
+  
+  names(table) <- c('Classes', 'Frequencia', 'Frequencia relativa')
+  
+  table    
+}
+
+#-----------------------------------------------------------------
+
+### Medidas de posição
+
+posicao <- function(vetor){
+  table <- data.frame(Minimo = quantile(vetor)[1],
+                      Quartil_1 = quantile(vetor)[2],
+                      Media = mean(vetor),
+                      Mediana = quantile(vetor)[3],
+                      Quartil_3 = quantile(vetor)[4],
+                      Maximo = quantile(vetor)[5])
+  
+  row.names(table) <- NULL
+  
+  table  
+}
+
+#-----------------------------------------------------------------
+
+### Medidas de dispersao
+
+dispersao <- function(vetor){
+  table <- data.frame(Amplitude = diff(range(vetor)),
+                      Variancia = var(vetor),
+                      Desvio_padrao = sd(vetor)#,
+                      #Coef_variacao = 100*sd(vetor)/mean(vetor)
+                      )
+  
+  table
+}
+
+#-----------------------------------------------------------------
+
+##################################################################
+
+##################################################################
+# Leitura e tratamento dos dados do questionário
+##################################################################
+
+# Caminho
+#path <- "./teste.csv"
+
+path <- "./Questionário-MEPC-2022 (respostas) - Respostas ao formulário 1.csv"
+
+##################################################################
+
+# Leitura dados 2022
+quest_22 <- read.csv(path, sep = ',', encoding = 'UTF-8', header = T)
+
+# Nome das colunas
+names(quest_22) <-
+  c('data_hora', 'instituicao', 'setor_ufpr', 'atividade_ies',
+    'area_conhec', 'fim_grad', 'inst_grad', 'programas_grad', 
+    'inicio_msc', 'final_msc', 'inst_msc', 'artigos', 'bolsa',
+    'materias_est', 'materias_est_pos', 'software_sn', 
+    'software_list', 'met_est', 'import_met_est', 
+    'expectativa_pos_pg', 'conhec_trans', 'youtube', 
+    'contat_coord', 'contat_colab', 'ensino_medio1', 'ensino_medio2',
+    'sexo', 'altura', 'peso', 'nascimento', 'emprego', 'residencia',
+    'irmaos', 'origem', 'transporte', 'tempo_ies', 'app_transporte',
+    'pet', 'instrumento', 'redes_sociais', 'atv_fisica_reg',
+    'atv_fisica_n', 'atv_fisica_qual', 'idade_foto', 'kiki_bouba',
+    'quadrados')
+
+##################################################################
+
+# Caminho
+path <- "./Questionário-MEPC-2021 (respostas) - Respostas ao formulário 1.csv"
+
+# Leitura dados 2021
+quest_21 <- read.csv(path, sep = ',', encoding = 'UTF-8', header = T)
+
+# Nome das colunas
+names(quest_21) <-
+  c('data_hora', 'instituicao', 'setor_ufpr', 'atividade_ies',
+    'area_conhec', 'fim_grad', 'inst_grad', 'programas_grad', 'inicio_msc',
+    'final_msc', 'inst_msc', 'artigos', 'bolsa', 'materias_est', 
+    'materias_n_est', 'software_sn', 'software_list', 'met_est',
+    'import_met_est', 'expectativa_pos_pg', 'conhec_trans', 'youtube', 
+    'contat_coord', 'contat_colab', 'ensino_medio1', 'ensino_medio2',
+    'sexo', 'altura', 'peso', 'nascimento', 'emprego', 'residencia',
+    'irmaos', 'origem', 'cnh', 'transporte', 'tempo_ies', 'app_transporte',
+    'pet', 'instrumento', 'redes_sociais', 'atv_fisica_reg', 'atv_fisica_n',
+    'atv_fisica_qual', 'covid_positivo', 'covid_conhecido',
+    'covid_gr_risco_me', 'covid_gr_risco_outro', 'covid_vacina', 
+    'medidas_eficazes', 'medidas_seguidas', 'covid_renda', 'covid_estudos',
+    'covid_aprendizado', 'covid_ere', 'dificuldade_ere', 'covid_conclusao', 'descartada',
+    'idade_foto', 'kiki_bouba', 'quadrados')
+
+quest_21 <- quest_21[4:nrow(quest_21),]
+
+##################################################################
+
+# Leitura dados 2020
+
+path <- "./resp_mpec2020 - Respostas ao formulário 1.csv"
+
+quest_20 <- read.csv(path, sep = ',', encoding = 'UTF-8')
+#quest <- read.csv(path, sep = ',', encoding = 'latin1')
+
+# Excluindo a primeira coluna referente aos carimbos de data e hora do google forms
+quest_20 <- quest_20[,-1]
+
+# Classificacao das variaves
+# lo/ln - var qualitativa ordinal, nominal
+# td - var quantitativa discreta
+
+# Renomeando as colunas
+names(quest_20) <- 
+  c(
+    # questoes academicas
+    "ln_instituicao", "ln_setorAtuacao", "lo_ativAtuacao",
+    "ln_setorArea", "tc_anoFimGrad", "ln_localGrad",
+    "ln_progGrad", "tc_inicMest", "tc_fimMest",
+    "ln_localMest", "td_artigo", "ln_bolsaEstudo",
+    "td_estatGrad", "td_estatPGrad", "lo_soft",
+    "ln_enumSoft", "lo_importancia", "td_notaImport",
+    "ln_expectAposPG", "ln_conhecTransv", "lo_videoTransv",
+    "ln_turma", "lo_contatoProfDisc", "lo_contatoProfColabDisc",
+    "ln_medio1", "ln_medio2",
+    
+    # perfil do aluno
+    "ln_sexo", "tc_altura", "tc_peso",
+    "dataNasc", "ln_tipoTrab", "ln_compMoradia",
+    "td_numIrmao", "ln_origem", "ln_tipoHab",
+    "ln_tipoTransp", "tc_tempoPUniv", "td_qtddServTransp", 
+    "ln_pet", "ln_instr","ln_rede",
+    
+    #questoes extra
+    "tc_idadeProf", "ln_kiki"
+  )
+
+##################################################################
+
+# Leitura dados 2019
+
+path <- "./resp_2019.csv"
+
+quest_19 <- read.csv(path, sep = ',', encoding = 'UTF-8')
+
+quest_19 <- data.frame(quest_19[,-1], stringsAsFactors = FALSE)
+
+names(quest_19) <- c("lo_ativAtuacao", "ln_setorAtuacao", 
+                   "tc_anoFimGrad", "ln_localGrad", 
+                   "ln_progGrad", "tc_inicMest", "tc_fimMest", 
+                   "ln_localMest", "td_artigo", "ln_bolsaEstudo", 
+                   "td_estatGrad", "td_estatPGrad", "lo_soft", 
+                   "ln_enumSoft", "lo_importancia", "td_notaImport", 
+                   "ln_tipoTrab", "ln_sexo", "td_numIrmao", 
+                   "ln_origem", "ln_compMoradia", "ln_tipoTransp", 
+                   "ln_tipoHab", "tc_tempoPUniv", "tc_altura", 
+                   "tc_peso", "ln_pet", "ln_instr", "dataNasc", 
+                   "ln_rede", "td_qtddServTransp", "lo_provNetflix", 
+                   "ln_arrozNatal", "tc_idadeProf", "ln_expectAposPG", 
+                   "ln_conhecTransv", "lo_videoTransv", 
+                   "lo_contatoProfDisc", "lo_contatoProfColabDisc") 
+
+##################################################################
+
+```
+
+---
+
+Ok... Vencemos a etapa de montar o questionário, tratar as respostas, filtrar respostas coerentes e etc. Agora precisamos começar nossa análise. Em geral começamos sempre por uma análise exploratória do nosso conjunto de dados.
+
+---
+
+Em uma análise exploratória buscamos sintetizar a informação presente nos dados por meio de tabelas, gráficos e medidas.
+
+Cuidados devem ser tomados no que diz respeito à escolha do tipo de representação. Devemos, por exemplo, evitar que o gráfico fique desproporcional ou privilegiando determinados valores a fim de induzir conclusões àqueles que utilizam o gráfico como forma de visualização.
+
+A escolha do gráfico está diretamente ligada ao tipo das variáveis. Além disso, existem gráficos que permitem análises de mais de uma variável simultâneamente a fim de verificar como uma influencia a outra(s).
+
+----
+
+# Tipos de variáveis
+
+Existem dois tipos de variáveis: as numéricas (**quantitativas**) e as não numéricas (**qualitativas**):
+
+**Variáveis Quantitativas**: assumem valores numéricos. 
+
+Podem ser:
+
+ - **Discretas**: características mensuráveis que podem assumir apenas um número finito ou infinito contável de valores e, assim, somente fazem sentido valores inteiros.
+ 
+ - **Contínuas**: características mensuráveis que assumem valores em uma escala contínua, isto é, na reta real.
+
+**Variáveis Qualitativas**: são as características definidas categorias, ou seja, representam uma classificação dos indivíduos e não uma característica numérica. 
+
+Podem ser:
+
+ - **Nominais**: não existe ordenação nem peso entre as categorias.
+
+ - **Ordinais**: existe uma ordenação entre as categorias.
+
+---
+
+Tendo isso em mente podemos começar a pensar em que medidas e gráficos podemos utilizar para representar nossas variáveis (análises univariadas) e também estudar a relação entre estas variáveis (análises bi, tri e multivariadas)
+
+---
+
+Algumas possibilidades de gráficos para cada tipo de variável são:
+
+ - **Qualitativa nominal ou ordinal**: setores, barras, linhas.
+
+ - **Quantitativa discreta**: barras, linhas, histograma, boxplot, densidade.
+
+ - **Quantitativas contínuas**: histograma, densidade, boxplot.
+
+ - **Análises bivariadas**:
+    * *Quantivativa vs Quantitativa*: Diagrama de dispersão.
+    * *Qualitativa vs Quantitativa*: Boxplots.
+    * *Qualitativa vs Qualitativa*: Gráfico de mosaico ou barras.
+
+---
+
+Considere um conjunto de dados genérico, composto por uma variável quantitativa discreta, duas variáveis quantitativas contínuas e duas variáveis qualitativas nominais. Veja alguns exemplos das representações mencionadas:
+
+```{r, echo=FALSE}
+# Tabelas e Gráficos básicos
+
+## Conjunto de dados genérico
+
+v1 = rnorm(100, 20, 5)
+v2 = rnorm(100, 20, 5 )
+
+discreta = rpois(100, 5)
+continua1 = v1*2
+continua2 = v1+v2
+categorica1 = sample(letters[1:3], 100, replace = T)
+categorica2 = sample(letters[4:8], 100, replace = T)
+
+df <- data.frame(discreta, continua1,
+                 continua2, categorica1,
+                 categorica2)
+```
+
+---
+
+### Tabelas {.tabset .tabset-fade .tabset-pills}
+
+---
+
+#### Tabela de frequências para variável categórica
+
+<center>
+```{r, echo=FALSE}
+pander::pander(freq_n_ord(df$categorica1))
+```
+</center>
+
+---
+
+#### Tabela de frequências absolutas para variável discreta
+
+<center>
+```{r, echo=FALSE}
+pander::pander(freq_n_ord(df$discreta))
+```
+</center>
+
+---
+
+#### Tabela de frequências por faixas de valores 
+
+<center>
+```{r, echo=FALSE}
+pander::pander(tab_classes(df$continua1))
+```
+</center>
+
+---
+
+#### Tabela de medidas descritivas
+
+<center>
+```{r, echo=FALSE}
+pander::pander(posicao(df$continua1))
+pander::pander(dispersao(df$continua1))
+```
+</center>
+
+---
+
+### Gráficos
+
+---
+
+#### Representação de Frequências {.tabset .tabset-fade .tabset-pills}
+
+---
+
+##### Gráfico de setores
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+table1 <- freq_n_ord(df$categorica1)
+
+table1 <- table1 %>% 
+  arrange(desc(Niveis)) %>%
+  mutate(ypos = cumsum(Frequencia.relativa)- 0.5*Frequencia.relativa)
+
+ggplot(table1, aes(x="", y=Frequencia.relativa, fill=Niveis)) +
+  geom_bar(stat="identity", 
+           width=1,
+           col = 1,
+           lwd = 1) +
+  coord_polar("y", start=0) +
+  theme_classic() + 
+  #theme(legend.position="none") +
+  geom_text(aes(y = ypos, label = Frequencia), 
+            color = 1, 
+            size = 5)+
+  ylab("") +
+  xlab("") +
+  ggtitle("Gráfico de setores \n\nVariável categórica 1")+
+  theme(legend.position = 'bottom',
+        plot.title = element_text(family = "Helvetica", 
+                                  face = "bold", 
+                                  size = (20),
+                                  hjust = 0.5),
+        axis.title = element_text(face = "bold",
+                                  size = 15),
+        axis.text = element_blank(),
+        legend.title = element_blank(),
+        text = element_text(size=20))
+
+```
+
+---
+
+##### Gráfico de barras para variável qualitativa
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+ggplot(data=table1, aes(x=reorder(Niveis, -Frequencia), 
+                        y=Frequencia#, 
+                        #fill = Niveis
+)) + 
+  geom_bar(stat="identity", 
+           col=1,
+           lwd=1)+
+  ylim(c(0, 
+         (max(table1$Frequencia)+ (max(table1$Frequencia)*0.2))))+
+  geom_text(aes(label=Frequencia), 
+            vjust=-1, 
+            color=1, 
+            size=8)+
+  ylab("Frequência") +
+  xlab("") +
+  ggtitle("Gráfico de barras\n\nVariável categórica 1")+
+  theme_classic() + theme(legend.position = 'bottom',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          #axis.text = element_blank(),
+                          legend.title = element_blank(),
+                          text = element_text(size=20))
+```
+
+---
+
+##### Gráfico de barras para variável discreta
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+table1 <- freq_n_ord(df$discreta)
+table1$Niveis <- as.numeric(table1$Niveis)
+
+ggplot(data=table1, aes(x=Niveis, 
+                        y=Frequencia#, 
+                        #fill = Niveis
+)) + 
+  geom_bar(stat="identity", 
+           col=1,
+           lwd=1)+
+  ylim(c(0, 
+         (max(table1$Frequencia)+ (max(table1$Frequencia)*0.2))))+
+  geom_text(aes(label=Frequencia), 
+            vjust=-1, 
+            color=1, 
+            size=8)+
+  ylab("Frequência") +
+  xlab("Variável discreta") +
+  ggtitle("Gráfico de barras\n\nVariável discreta")+
+  scale_x_discrete(limits = min(table1$Niveis):max(table1$Niveis))+ 
+  theme_classic() + theme(legend.position = 'bottom',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          #axis.text = element_blank(),
+                          legend.title = element_blank(),
+                          text = element_text(size=20))
+```
+
+---
+
+##### Gráfico de linhas
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+table <- as.data.frame(table(df$discreta))
+table$Var1 <- as.numeric(as.vector(table$Var1))
+
+# Plot
+ggplot(table, aes(x=Var1, y=Freq)) +
+  geom_point() + 
+  geom_segment(aes(x=Var1, 
+                   xend=Var1, 
+                   y=0, 
+                   yend=Freq),
+               lwd = 1.5)+
+  ylab("Frequência") +
+  xlab("Variável discreta") +
+  ggtitle("Gráfico de linhas\n\nVariável discreta")+
+  scale_x_discrete(limits = min(table1$Niveis):max(table1$Niveis))+ 
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          text = element_text(size=15)) 
+```
+
+---
+
+#### Distribuição de variáveis numéricas {.tabset .tabset-fade .tabset-pills}
+
+---
+
+##### Histograma
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+ggplot(df, aes(x=continua2)) +
+  geom_histogram(col=1,
+                 lwd=1,
+                 breaks = hist(df$continua2, plot = FALSE)$breaks) + 
+  xlab("Variável contínua 2") +
+  ylab("Frequência") +
+  ggtitle("Histograma\n\nVariável contínua 2")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          text = element_text(size=15)) 
+
+```
+
+---
+
+##### Densidade
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+ggplot(df, aes(x=continua2)) +
+  geom_density(col=1,
+                 lwd=1) + 
+  xlab("Variável contínua 2") +
+  ylab("Densidade") +
+  ggtitle("Densidade\n\nVariável contínua 2")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          text = element_text(size=15)) 
+```
+
+---
+
+##### Boxplot
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+ggplot(data = df, 
+       mapping = aes(y=continua2, x='1')) +
+  stat_boxplot(geom ='errorbar')+
+  geom_boxplot(alpha = 1)+
+  stat_summary(fun.y=mean, 
+               geom="point", 
+               shape=20, 
+               size=3, 
+               color="red", 
+               fill="red")+ 
+  xlab("") +
+  ylab("") +
+  ggtitle("Boxplot\n\nVariável contínua 2")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          axis.text.x=element_blank(),
+                          text = element_text(size=15)) #+coord_flip()
+```
+
+---
+
+##### Histograma + Boxplot
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+p1 = ggplot(df) + 
+  geom_histogram(aes(x=continua2), 
+                 position="identity",
+                 col = 1,
+                 lwd = 1,
+                 breaks = hist(df$continua2, plot = FALSE)$breaks) + 
+  ylab("Frequência") +
+  xlab("") +
+  ggtitle("Histograma+Boxplot\n\nVariável contínua 2")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          text = element_text(size=15))
+
+p2 = ggplot(data = df, 
+            mapping = aes(y=continua2, x='1')) +
+  stat_boxplot(geom ='errorbar')+
+  geom_boxplot(alpha = 1)+
+  stat_summary(fun.y=mean, 
+               geom="point", 
+               shape=20, 
+               size=3, 
+               color="red", 
+               fill="red")+ 
+  ylab("Variável") +
+  xlab("") +
+  #ggtitle("Titulo")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          axis.text.y=element_blank(),
+                          text = element_text(size=15)) +coord_flip()
+
+ggarrange(p1, p2, 
+          heights = c(2, 1), 
+          align = "hv", 
+          ncol = 1, 
+          nrow = 2)
+```
+
+---
+
+##### Histograma + Boxplot + Densidade
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+p1 = ggplot(df) + 
+  geom_histogram(aes(x=continua2,
+                     y=..density..), 
+                 position="identity",
+                 col = 1,
+                 lwd = 1,
+                 breaks = hist(df$continua2, plot = FALSE)$breaks) + 
+  geom_density(aes(x=continua2,
+                   y=..density..),
+               col = 4,
+               lwd = 1) + 
+  ylab("Densidade") +
+  xlab("") +
+  ggtitle("Histograma+Boxplot+Density\n\nVariável contínua 2")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          text = element_text(size=15))
+
+p2 = ggplot(data = df, 
+            mapping = aes(y=continua2, x='1')) +
+  stat_boxplot(geom ='errorbar')+
+  geom_boxplot(alpha = 1)+
+  stat_summary(fun.y=mean, 
+               geom="point", 
+               shape=20, 
+               size=3, 
+               color="red", 
+               fill="red")+ 
+  ylab("Variável") +
+  xlab("") +
+  #ggtitle("Titulo")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          axis.text.y=element_blank(),
+                          text = element_text(size=15)) +coord_flip()
+
+ggarrange(p1, p2, 
+          heights = c(2, 1), 
+          align = "hv", 
+          ncol = 1, 
+          nrow = 2)
+```
+
+---
+
+#### Representações bivariadas {.tabset .tabset-fade .tabset-pills}
+
+---
+
+##### Diagrama de dispersão
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+ggplot(data = df, 
+       mapping = aes(x = continua1,
+                     y = continua2)) +
+  geom_point()+
+  geom_smooth(method = 'lm', se=F, col=2)+
+#  geom_smooth(se=F)+
+  xlab("Variável contínua 1") +
+  ylab("Variável contínua 2") +
+  ggtitle("Diagrama de dispersão")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          text = element_text(size=15))
+```
+
+---
+
+##### Boxplots para níveis de um fator
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+
+ggplot(data = df, 
+       mapping = aes(x = categorica1,
+                     y=continua1)) +
+  stat_boxplot(geom ='errorbar')+
+  geom_boxplot(alpha = 1)+
+  stat_summary(fun.y=mean, 
+               geom="point", 
+               shape=20, 
+               size=3, 
+               color="red", 
+               fill="red")+ 
+  xlab("Variável categórica 1") +
+  ylab("Variável contínua 1") +
+  ggtitle("Boxplot para níveis de um fator")+
+  theme_classic() + theme(legend.position = 'none',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          text = element_text(size=15)) 
+```
+
+---
+
+##### Barras para variáveis categóricas
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+table <- as.data.frame(table(df$categorica1,
+                             df$categorica2))
+
+table$freq_r <- table$Freq/sum(table$Freq)
+table$freq_r <- round(table$freq_r, 2)
+
+names(table) <- c('categorica1', 'categorica2', 'Freq', 'freq_r')
+
+ggplot(table, 
+       aes(x=categorica1, y=Freq, fill=categorica2)) + 
+  geom_bar(stat = 'identity',
+           col = 1,
+           lwd = 1, 
+           position = 'dodge') +  
+  ylim(c(0, 
+         (max(table$Freq)+ (max(table$Freq)*0.05))))+
+  geom_text(aes(label = Freq),
+            #hjust=-0.1, 
+            color=1, 
+            size=8, 
+            position=position_dodge(width=0.9),
+            vjust=-0.5
+  )+
+  xlab("Categórica 1") +
+  ylab("Frequência") +
+  ggtitle("Barras para 2 categóricas")+
+  theme_classic() + theme(legend.position = 'top',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          #axis.text = element_blank(),
+                          #legend.title = element_blank(),
+                          text = element_text(size=15)) 
+```
+
+---
+
+##### Barras proporcionais para 2 variáveis categóricas
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+table2 <- as.matrix(prop.table(table(df$categorica2,
+                                     df$categorica1), 
+                               mar = 2))
+
+
+table2 <- as.data.frame(table2)
+
+names(table2) <- c('categorica2', 'categorica1', 'Freq')
+
+
+ggplot(table2, 
+       aes(x=categorica1, y=Freq, fill=categorica2)) + 
+  geom_bar(stat = 'identity',
+           col = 1,
+           lwd = 1)+ 
+  #  geom_text(aes(label = freq_r),
+  #            hjust=0.5, 
+  #            color=1, 
+  #            size=8, 
+  #            position=position_stack(), 
+  #            vjust=1)+
+  xlab("Variável categórica 1") +
+  ylab("Proporção") +
+  ggtitle("Barras empilhadas proporcionais para\n 2 variáveis categóricas")+
+  theme_classic() + theme(legend.position = 'top',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          #axis.text = element_blank(),
+                          #legend.title = element_blank(),
+                          text = element_text(size=15)) 
+```
+
+---
+
+##### Gráfico de mosaico para 2 variáveis categóricas
+
+```{r, comment=FALSE, message=FALSE, fig.align='center', warning=FALSE, echo = FALSE}
+ggplot(data = df) +
+  geom_mosaic(aes(x = product(categorica1, categorica2), 
+                  fill=categorica1)) +
+  xlab("Variável categórica 2") +
+  ylab("Variável categórica 1") +
+  ggtitle("Gráfico de mosaico para\n 2 variáveis categóricas")+
+  theme_classic() + theme(legend.position = 'top',
+                          plot.title = element_text(family = "Helvetica", 
+                                                    face = "bold", 
+                                                    size = (20),
+                                                    hjust = 0.5),
+                          axis.title = element_text(face = "bold",
+                                                    size = 15),
+                          #axis.text = element_blank(),
+                          #legend.title = element_blank(),
+                          text = element_text(size=15)) 
+```
+
+---
+
+#
+
+
+<center>
+
+<table><tr>
+
+<td> <img src="img/dest-texto-2.png" alt="Drawing" style="width: 250px;"/> </td>
+
+<td> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </td>
+
+<td> <img src="img/transversais.png" alt="Drawing" style="width: 300px;"/> </td>
+
+<td> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </td>
+
+<td> <img src="img/ufpr-transparent-600px.png" alt="Drawing" style="width: 200px;"/> </td>
+
+</center>
+
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
