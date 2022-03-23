@@ -53,7 +53,7 @@ quest_22$indica_foto <- c(rep('S/ barba', 53), #53
                           rep('S/ barba', 38), #154 
                           rep('C/ barba', 31), #185
                           rep('S/ barba', 52), #237
-                          rep('C/ barba', 28)) 
+                          rep('C/ barba', 60)) 
 
 idade_foto <- subset(quest_22, idade_foto >= 18 & idade_foto <= 60)
 

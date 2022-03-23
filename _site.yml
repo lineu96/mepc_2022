@@ -56,17 +56,9 @@ navbar:
       icon: fa-plus
       menu:
         
-        - text: "Dados brutos"
+        - text: "Dados"
           icon: fa-arrow-right
-          href: 
-
-        - text: "Dados tratados"
-          icon: fa-arrow-right
-          href: 
-
-        - text: "Codificação das variáveis"
-          icon: fa-arrow-right
-          href: 
+          href: https://github.com/lineu96/mepc_2022/blob/main/Question%C3%A1rio-MEPC-2022%20(respostas)%20-%20Respostas%20ao%20formul%C3%A1rio%201.csv
 
         - text: "Como gerar um relatório html"
           icon: fa-arrow-right
