@@ -1294,7 +1294,7 @@ ggplot(idade) +
                  position="identity",
                  col = 1,
                  lwd = 1,
-                 breaks = hist(imc$imc, plot = FALSE)$breaks) + 
+                 breaks = hist(idade$idade, plot = FALSE)$breaks) + 
   geom_density(aes(x=idade,
                    y=..density..),
                col = 4,
@@ -1320,7 +1320,7 @@ ggplot(idade) +
 p1 = ggplot(idade, aes(x=idade)) +
   geom_histogram(col=1,
                  lwd=1,
-                 breaks = hist(imc$imc, plot = FALSE)$breaks) + 
+                 breaks = hist(idade$idade, plot = FALSE)$breaks) + 
   ylab("Frequência") +
   xlab("") +
   ggtitle("Idade")+
@@ -1374,7 +1374,7 @@ p1 = ggplot(idade) +
                  position="identity",
                  col = 1,
                  lwd = 1,
-                 breaks = hist(imc$imc, plot = FALSE)$breaks) + 
+                 breaks = hist(idade$idade, plot = FALSE)$breaks) + 
   geom_density(aes(x=idade,
                    y=..density..),
                col = 4,

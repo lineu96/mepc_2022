@@ -765,7 +765,7 @@ pander::pander(table1)
 
 table1 <- freq_n_ord(quest_22$area_conhec)
 
-table1$Niveis <- c('Biológicas', 'Exatas', 'Humanas')
+table1$Niveis <- c('Humanas', 'Exatas', 'Biológicas')
 
 ggplot(data=table1, aes(x=reorder(Niveis, -Frequencia), 
                        y=Frequencia#, 
@@ -1468,7 +1468,7 @@ Tempo para conclusão do mestrado.
 <center>
 ```{r, comment=FALSE, message=FALSE, fig.align='center', warning=TRUE, echo = FALSE}
 
-#pander(freq_n_ord(mestrado$tempo_mest))
+pander(freq_n_ord(mestrado$tempo_mest))
 ```
 </center>
 
